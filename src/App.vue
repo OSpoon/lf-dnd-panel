@@ -18,7 +18,7 @@ onMounted(() => {
 
   lf.extension.dndPanel.setPatternItems([
     {
-      group: "GruopA",
+      group: "功能节点",
       items: [
         {
           label: "选区",
@@ -27,7 +27,7 @@ onMounted(() => {
       ],
     },
     {
-      group: "GruopB",
+      group: "起始节点",
       items: [
         {
           type: "circle",
@@ -45,14 +45,14 @@ onMounted(() => {
       ],
     },
     {
-      group: "GruopC",
+      group: "任务节点",
       items: [
         { type: "rect", label: "用户任务", icon: icons.task },
         { type: "rect", label: "系统任务", icon: icons.task, group: "GruopC" },
       ],
     },
     {
-      group: "GruopD",
+      group: "条件节点",
       items: [{ type: "diamond", label: "条件判断", icon: icons.condition }],
     },
   ]);

@@ -1,5 +1,5 @@
 import LogicFlow from "@logicflow/core";
-import "quarkd/lib/collapse";
+import "./px-collapse";
 
 type ShapeItem = {
   type?: string;
@@ -39,14 +39,17 @@ class DndPanel {
     }
     this.panelEl = document.createElement("div");
     this.panelEl.className = "lf-dndpanel";
-
     this.groupList.forEach((groupItem) => {
       const collapse = this.createCollapse(groupItem.group);
+      const container = document.createElement("div");
+      container.className = "collapse-container";
+      collapse.appendChild(container);
+      groupItem?.items &&
+        groupItem.items.forEach((shapeItem) => {
+          container.appendChild(this.createDndItem(shapeItem));
+        });
       this.panelEl.appendChild(collapse);
     });
-    // this.groupList.forEach((shapeItem) => {
-    //   this.panelEl.appendChild(this.createDndItem(shapeItem));
-    // });
     domContainer.appendChild(this.panelEl);
     this.domContainer = domContainer;
   }
@@ -123,9 +126,8 @@ class DndPanel {
   }
 
   private createCollapse(groupName: string): HTMLElement {
-    const collapse = document.createElement("quark-collapse");
+    const collapse = document.createElement("px-collapse");
     collapse.setAttribute("title", groupName);
-    collapse.className = `lf-${groupName}-dndpanel`;
     return collapse;
   }
 }

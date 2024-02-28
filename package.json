@@ -11,7 +11,7 @@
   "dependencies": {
     "@logicflow/core": "^1.2.22",
     "@logicflow/extension": "^1.2.22",
-    "quarkd": "^1.5.17",
+    "quarkc": "^1.0.40",
     "vue": "^3.4.19"
   },
   "devDependencies": {

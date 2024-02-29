@@ -2,7 +2,9 @@
 
 近期有小伙伴在使用 **Logic-Flow** 流程图编辑框架的时候, 对于如何实现自定义可分组拖拽面板没有找到思路, 在简单沟通过后, 我觉得可以提供一个简单的示例来帮助大家快速了解;
 
-!(效果展示)[https://picgo-2022.oss-cn-beijing.aliyuncs.com/202402291435483.png]
+## 效果展示
+
+![效果展示](https://picgo-2022.oss-cn-beijing.aliyuncs.com/202402291435483.png)
 
 ## 涉及内容点
 

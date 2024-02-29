@@ -1,6 +1,15 @@
-# LogicFlow 自定义拖拽面板风格
+# LogicFlow 自定义可分组拖拽面板
 
-近期有位小伙伴在使用 `logic-flow` 的时候, 对于如何实现自定义拖拽面板风格没有找到思路, 在简单沟通过后, 我觉得可以提供一个简单的示例来帮助大家快速了解;
+近期有小伙伴在使用 **Logic-Flow** 流程图编辑框架的时候, 对于如何实现自定义可分组拖拽面板没有找到思路, 在简单沟通过后, 我觉得可以提供一个简单的示例来帮助大家快速了解;
+
+!(效果展示)[https://picgo-2022.oss-cn-beijing.aliyuncs.com/202402291435483.png]
+
+## 涉及内容点
+
+1. Logic-Flow 入门使用;
+2. Logic-Flow 内置插件使用;
+3. WebComponents 介绍;
+4. Logic-Flow 自定义插件;
 
 ## 简单的需求分析
 
@@ -164,37 +173,146 @@ lf.extension.dndPanel.setPatternItems([
 
 重新预览效果, 可以看到内置拖拽面板已经生效;
 
-![dnd-panel](https://raw.githubusercontent.com/OSpoon/ImageStorage/2024/202402271700369.png?token=ACNIKH5EGHCSCZFG5GOIMJ3F3WSQY)
+![dnd-panel](https://picgo-2022.oss-cn-beijing.aliyuncs.com/202402291104775.png)
 
-## 自定义拖拽面板风格
+## 自定义可分组拖拽面板
 
-在自定义拖拽面板风格时, 我这里选择使用内置拖拽面板的源码并搭配哈罗团队开源的跨平台组件库 [Quarkd](https://vue-quarkd.hellobike.com/#/) 进行二次开发.
+在自定义可分组拖拽面板时, 我选择在 [dnd-panel 源码](https://github.com/didi/LogicFlow/blob/master/packages/extension/src/components/dnd-panel/index.ts) 的基础上搭配 **Web Component** 组件定制拖拽面板插件.
+
+### Web Component
+
+[Web Component](https://developer.mozilla.org/zh-CN/docs/Web/API/Web_components) 浏览器原生支持且可跨前端框架使用的组件开发技术, 哈罗团队利用其开源的 [Quarkc](https://quarkc.hellobike.com/#/) 框架所开发的 [Quarkd](https://vue-quarkd.hellobike.com/#/) 就是典型的 **Web Components** 组件库 (Mobile).
+
+我选择使用 [Quarkc](https://quarkc.hellobike.com/#/) 对 [Quarkd](https://vue-quarkd.hellobike.com/#/) 中 [collapse](https://github.com/hellof2e/quark-design/blob/main/packages/quarkd/src/collapse/index.tsx) 组件的源码提前开发一个适用于 PC 端的折叠组件.
+
+PS: 折叠组件位于项目 (`src/extension/px-collapse.js`) 目录.
 
 ### 获取 dnd-panel 源码
 
-在 `src` 目录下创建 `extension/dnd-panel.ts` 文件, 并复制 [dnd-panel 源码](https://github.com/didi/LogicFlow/blob/master/packages/extension/src/components/dnd-panel/index.ts) 到该文件中;
+1. 在 `src` 目录下创建 `extension/dnd-panel.ts` 文件;
+2. 复制 [dnd-panel 源码](https://github.com/didi/LogicFlow/blob/master/packages/extension/src/components/dnd-panel/index.ts) 到 `extension/dnd-panel.ts` ;
+3. 修改 `App.vue` 中 `import` 语句, 导入 `extension/dnd-panel.ts` 文件;
 
-修改 `App.vue` 中 `import` 语句, 导入 `extension/dnd-panel.ts` 文件;
+### 重写 dnd-panel 插件
 
-```typescript
-// 修改前
-import { DndPanel } from "@logicflow/extension";
-
-// 修改后
-import { DndPanel } from "./extension/dnd-panel";
-```
-
-### 修改 dnd-panel 风格
-
-安装 `quarkd` 依赖;
+安装 `collapse` 组件的唯一依赖 `quarkc`;
 
 ```shell
-npm i quarkd --save
+npm i quarkc --save
 ```
 
 在 `extension/dnd-panel` 导入 `collapse` 组件;
 
 ```typescript
 // ./extension/dnd-panel.ts
-import "quarkd/lib/collapse";
+import "./px-collapse";
 ```
+
+调整 `setPatternItems` 函数的数据结构, 使其支持 `collapse` 组件;
+
+```typescript
+type GroupItem = {
+  group: string;
+  items?: ShapeItem[];
+};
+
+setPatternItems(groupList: GroupItem[]) {
+  this.groupList = groupList;
+  // 支持渲染后重新设置拖拽面板
+  if (this.domContainer) {
+    this.render(this.lf, this.domContainer);
+  }
+}
+```
+
+使用原生 **DOM** 操作的方式创建 `collapse` 元素;
+
+```typescript
+private createCollapse(groupName: string): HTMLElement {
+  const collapse = document.createElement("px-collapse");
+  collapse.setAttribute("title", groupName);
+  return collapse;
+}
+```
+
+最后调整 `render` 方法, 将每一组的节点都添加到对应的 `collapse` 组件中;
+
+```typescript
+render(_lf: LogicFlow, domContainer: HTMLElement) {
+  ...
+  this.panelEl = document.createElement("div");
+  this.panelEl.className = "lf-dndpanel";
+
+  this.groupList.forEach((groupItem) => {
+    const collapse = this.createCollapse(groupItem.group);
+    const container = document.createElement("div");
+    container.className = "collapse-container";
+    // 第一步: collapse 组件添加 div 内容容器, 并设置 className, 方便调整样式;
+    collapse.appendChild(container);
+    groupItem?.items &&
+      groupItem.items.forEach((shapeItem) => {
+        // 第二步: 循环每组中的 items 数组, 创建 DndItem 元素并添加到 collapse 组件;
+        container.appendChild(this.createDndItem(shapeItem));
+      });
+    // 第三步: 将每一个 collapse 组件添加到面板中;
+    this.panelEl.appendChild(collapse);
+  });
+  domContainer.appendChild(this.panelEl);
+  this.domContainer = domContainer;
+}
+```
+
+![DOM结构图](https://picgo-2022.oss-cn-beijing.aliyuncs.com/202402291430934.png)
+
+当然还要 `setPatternItems` 方法的数据结构变更后还有更新其数据;
+
+```typescript
+[
+  {
+    group: "功能节点",
+    items: [
+      {
+        label: "选区",
+        icon: icons.select,
+      },
+    ],
+  },
+  {
+    group: "起始节点",
+    items: [
+      {
+        type: "circle",
+        text: "开始",
+        label: "开始节点",
+        icon: icons.start,
+      },
+      {
+        type: "circle",
+        text: "结束",
+        label: "结束节点",
+        icon: icons.end,
+        group: "GruopB",
+      },
+    ],
+  },
+  {
+    group: "任务节点",
+    items: [
+      { type: "rect", label: "用户任务", icon: icons.task },
+      { type: "rect", label: "系统任务", icon: icons.task, group: "GruopC" },
+    ],
+  },
+  {
+    group: "条件节点",
+    items: [{ type: "diamond", label: "条件判断", icon: icons.condition }],
+  },
+];
+```
+
+最终的预览效果如下:
+
+![自定义可分组拖拽面板](https://picgo-2022.oss-cn-beijing.aliyuncs.com/202402291158586.png)
+
+## 总结
+
+在本次的体验中, 我们学习了 LogicFlow 的拖拽面板插件的使用, 也了解了如何自定义拖拽面板的样式和内容, 同时还结合的了 Quarkc 开发的 Web Component 组件, 从而轻松的实现了一个可分组的拖拽面板插件.
